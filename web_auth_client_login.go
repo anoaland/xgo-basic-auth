@@ -15,10 +15,11 @@ func (c BasicAuthClient) Login(username string, password string) {
 
 func (c BasicAuthClient) EncodeToString(src []byte) string {
 	if c.passwordConfig.HexEncoding {
+
 		return hex.EncodeToString(src)
 	}
 
-	return base64.URLEncoding.EncodeToString(src)
+	return base64.StdEncoding.EncodeToString(src)
 }
 
 func (c BasicAuthClient) DecodeString(src string) ([]byte, error) {
@@ -26,12 +27,12 @@ func (c BasicAuthClient) DecodeString(src string) ([]byte, error) {
 		return hex.DecodeString(src)
 	}
 
-	return base64.URLEncoding.DecodeString(src)
+	return base64.StdEncoding.DecodeString(src)
 }
 
 func (c BasicAuthClient) HashPassword(passwordText string) (string, string) {
 	password := []byte(passwordText)
-	salt := make([]byte, 16) // generate a random salt
+	salt := make([]byte, c.passwordConfig.SaltLen) // generate a random salt
 	_, err := rand.Read(salt)
 	if err != nil {
 		panic(err)
@@ -51,7 +52,7 @@ func (c BasicAuthClient) HashPassword(passwordText string) (string, string) {
 }
 
 func (c BasicAuthClient) VerifyPassword(hashedPassword string, salt string, passwordText string) bool {
-	password := []byte(passwordText)
+
 	decodedPasswordHash, err := c.DecodeString(hashedPassword)
 	if err != nil {
 		return false
@@ -62,7 +63,10 @@ func (c BasicAuthClient) VerifyPassword(hashedPassword string, salt string, pass
 		return false
 	}
 
-	newHash := pbkdf2.Key(password,
+	password := []byte(passwordText)
+
+	newHash := pbkdf2.Key(
+		password,
 		decodedSalt,
 		c.passwordConfig.Iterations,
 		c.passwordConfig.PassLen,
