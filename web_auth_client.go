@@ -50,7 +50,11 @@ func New(method jwt.SigningMethod,
 	}
 }
 
-func (c BasicAuthClient) GetUserFromToken(token string) (*BasicUser, error) {
+func (c BasicAuthClient) GetUserFromToken(token string) (any, error) {
+	return c.GetBasicUserFromToken(token)
+}
+
+func (c BasicAuthClient) GetBasicUserFromToken(token string) (*BasicUser, error) {
 	u := BasicUser{}
 	_, err := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
 		if method, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

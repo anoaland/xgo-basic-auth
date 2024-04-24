@@ -28,7 +28,7 @@ func TestBasicAuthClient_GetUserFromToken(t *testing.T) {
 	authClient := New(jwt.SigningMethodHS256, jwtSecret, "", "", passwordConfig)
 
 	// Call the method under test
-	user, err := authClient.GetUserFromToken(tokenString)
+	user, err := authClient.GetBasicUserFromToken(tokenString)
 
 	// Assertions
 	assert.NoError(t, err)
