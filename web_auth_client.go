@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash"
+	"log"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -25,7 +27,7 @@ type BasicAuthPasswordConfig struct {
 	HexEncoding bool
 }
 
-type BasicAuthClient struct {
+type BasicAuthClient[T interface{}] struct {
 	jwtSecret       string
 	jwtAudience     string
 	jwtIssuer       string
@@ -34,13 +36,13 @@ type BasicAuthClient struct {
 	passwordConfig  BasicAuthPasswordConfig
 }
 
-func New(method jwt.SigningMethod,
+func New[T interface{}](method jwt.SigningMethod,
 	jwtSecret string,
 	jwtAudience string,
 	jwtIssuer string,
-	passwordConfig BasicAuthPasswordConfig) *BasicAuthClient {
+	passwordConfig BasicAuthPasswordConfig) *BasicAuthClient[T] {
 	jwtSignatureKey := []byte(jwtSecret)
-	return &BasicAuthClient{
+	return &BasicAuthClient[T]{
 		jwtSecret:       jwtSecret,
 		jwtAudience:     jwtAudience,
 		jwtIssuer:       jwtIssuer,
@@ -50,34 +52,62 @@ func New(method jwt.SigningMethod,
 	}
 }
 
-func (c BasicAuthClient) GetUserFromToken(token string) (any, error) {
+func (c BasicAuthClient[T]) GetUserFromToken(token string) (any, error) {
 	return c.GetBasicUserFromToken(token)
 }
 
-func (c BasicAuthClient) GetBasicUserFromToken(token string) (*BasicUser, error) {
-	u := BasicUser{}
-	_, err := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
-		if method, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("signing method invalid")
-		} else if method != c.method {
-			return nil, fmt.Errorf("signing method invalid")
+func (c BasicAuthClient[T]) GetBasicUserFromToken(tokenString string) (*T, error) {
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		log.Println("method", token.Method, "===", c.method)
+
+		if token.Method != c.method {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		return c.jwtSignatureKey, nil
+		secret := []byte(c.jwtSecret)
+		return secret, nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &u, nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("claims not found")
+	}
+
+	// Create a new instance of T
+	user := new(T)
+	claimsBytes, _ := json.Marshal(claims)  // Marshal the claims into JSON bytes
+	err = json.Unmarshal(claimsBytes, user) // Unmarshal the JSON bytes into the user instance
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
-func (c BasicAuthClient) SignIn(user BasicUser) (*BasicAuthJWT, error) {
+func (c BasicAuthClient[T]) SignIn(user T) (*BasicAuthJWT, error) {
 
-	claims := &user
-	claims.Issuer = c.jwtIssuer
-	claims.Audience = []string{c.jwtAudience}
+	claims := jwt.MapClaims{
+		"iss": c.jwtIssuer,
+		"aud": c.jwtAudience,
+	}
+
+	userMap := make(map[string]interface{})
+	userBytes, err := json.Marshal(user)
+	if err != nil {
+		return nil, err
+	}
+	json.Unmarshal(userBytes, &userMap)
+	for key, value := range userMap {
+		claims[key] = value
+	}
+
+	log.Printf("USER %v", userMap)
+	log.Printf("APA %v", claims)
 
 	token := jwt.NewWithClaims(c.method, claims)
 	tokenString, err := token.SignedString(c.jwtSignatureKey)

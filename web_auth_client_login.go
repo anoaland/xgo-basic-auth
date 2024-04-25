@@ -9,11 +9,11 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-func (c BasicAuthClient) Login(username string, password string) {
+func (c BasicAuthClient[T]) Login(username string, password string) {
 
 }
 
-func (c BasicAuthClient) EncodeToString(src []byte) string {
+func (c BasicAuthClient[T]) EncodeToString(src []byte) string {
 	if c.passwordConfig.HexEncoding {
 
 		return hex.EncodeToString(src)
@@ -22,7 +22,7 @@ func (c BasicAuthClient) EncodeToString(src []byte) string {
 	return base64.StdEncoding.EncodeToString(src)
 }
 
-func (c BasicAuthClient) DecodeString(src string) ([]byte, error) {
+func (c BasicAuthClient[T]) DecodeString(src string) ([]byte, error) {
 	if c.passwordConfig.HexEncoding {
 		return hex.DecodeString(src)
 	}
@@ -30,7 +30,7 @@ func (c BasicAuthClient) DecodeString(src string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(src)
 }
 
-func (c BasicAuthClient) HashPassword(passwordText string) (string, string) {
+func (c BasicAuthClient[T]) HashPassword(passwordText string) (string, string) {
 	password := []byte(passwordText)
 	salt := make([]byte, c.passwordConfig.SaltLen) // generate a random salt
 	_, err := rand.Read(salt)
@@ -51,7 +51,7 @@ func (c BasicAuthClient) HashPassword(passwordText string) (string, string) {
 	return hexDerivedKey, saltString
 }
 
-func (c BasicAuthClient) VerifyPassword(hashedPassword string, salt string, passwordText string) bool {
+func (c BasicAuthClient[T]) VerifyPassword(hashedPassword string, salt string, passwordText string) bool {
 
 	decodedPasswordHash, err := c.DecodeString(hashedPassword)
 	if err != nil {
@@ -75,7 +75,7 @@ func (c BasicAuthClient) VerifyPassword(hashedPassword string, salt string, pass
 	return hmac.Equal(decodedPasswordHash, newHash)
 }
 
-func (c BasicAuthClient) HashPasswordWithEncodedSalt(password string) (string, error) {
+func (c BasicAuthClient[T]) HashPasswordWithEncodedSalt(password string) (string, error) {
 	salt := make([]byte, c.passwordConfig.SaltLen)
 	_, err := rand.Read(salt)
 	if err != nil {
@@ -92,7 +92,7 @@ func (c BasicAuthClient) HashPasswordWithEncodedSalt(password string) (string, e
 	return encodedSaltedHash, nil
 }
 
-func (c BasicAuthClient) VerifyPasswordWithEncodedSalt(hashedPassword string, password string) bool {
+func (c BasicAuthClient[T]) VerifyPasswordWithEncodedSalt(hashedPassword string, password string) bool {
 	decodedSaltedHash, err := c.DecodeString(hashedPassword)
 	if err != nil {
 		return false

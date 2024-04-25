@@ -25,7 +25,7 @@ func TestBasicAuthClient_GetUserFromToken(t *testing.T) {
 	expectedIssuer := "TEST_ISS"
 
 	// Initialize BasicAuthClient
-	authClient := New(jwt.SigningMethodHS256, jwtSecret, "", "", passwordConfig)
+	authClient := New[BasicUser](jwt.SigningMethodHS256, jwtSecret, "", "", passwordConfig)
 
 	// Call the method under test
 	user, err := authClient.GetBasicUserFromToken(tokenString)
@@ -40,7 +40,7 @@ func TestBasicAuthClient_GetUserFromToken(t *testing.T) {
 
 func TestBasicAuthClient_SignIn(t *testing.T) {
 
-	authClient := New(jwt.SigningMethodHS256, "secret", "TESTER_AUD", "TESTER_ISSUER", passwordConfig)
+	authClient := New[BasicUser](jwt.SigningMethodHS256, "secret", "TESTER_AUD", "TESTER_ISSUER", passwordConfig)
 
 	user := BasicUser{
 		Username: "foo",
@@ -52,7 +52,7 @@ func TestBasicAuthClient_SignIn(t *testing.T) {
 }
 
 func TestBasicAuthClient_HashPasswordTest(t *testing.T) {
-	authClient := New(jwt.SigningMethodHS256, "secret", "TESTER_AUD", "TESTER_ISSUER", passwordConfig)
+	authClient := New[BasicUser](jwt.SigningMethodHS256, "secret", "TESTER_AUD", "TESTER_ISSUER", passwordConfig)
 
 	password := "iwakpitik"
 	// hashedPasswordWithSalt, salt := authClient.HashPassword(password)
