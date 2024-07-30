@@ -1,4 +1,4 @@
-module github.com/anoaland/xgo/xgo-basic-auth
+module github.com/anoaland/xgo-basic-auth
 
 go 1.21.6
 
