@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"hash"
 
-	errors "github.com/anoaland/xgo/errors"
+	// errors "github.com/anoaland/xgo/errors"
+	"github.com/anoaland/xgo"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -61,7 +62,7 @@ func (c BasicAuthClient[T]) GetBasicUserFromToken(tokenString string) (*T, error
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 
 		if token.Method != c.method {
-			return nil, errors.NewXgoError("WEB_AUTH_CLIENT__GetBasicUserFromToken", fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
+			return nil, xgo.NewHttpUnauthorizedError("WEB_AUTH_CLIENT__GetBasicUserFromToken", fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
 		}
 
 		secret := []byte(c.jwtSecret)
@@ -69,12 +70,12 @@ func (c BasicAuthClient[T]) GetBasicUserFromToken(tokenString string) (*T, error
 	})
 
 	if err != nil {
-		return nil, errors.NewXgoError("WEB_AUTH_CLIENT__GetBasicUserFromToken", err)
+		return nil, xgo.NewHttpUnauthorizedError("WEB_AUTH_CLIENT__GetBasicUserFromToken", err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, errors.NewXgoError("WEB_AUTH_CLIENT__GetBasicUserFromToken__claims_not_found", err)
+		return nil, xgo.NewHttpUnauthorizedError("WEB_AUTH_CLIENT__GetBasicUserFromToken__claims_not_found", err)
 	}
 
 	// Create a new instance of T
@@ -82,7 +83,7 @@ func (c BasicAuthClient[T]) GetBasicUserFromToken(tokenString string) (*T, error
 	claimsBytes, _ := json.Marshal(claims)  // Marshal the claims into JSON bytes
 	err = json.Unmarshal(claimsBytes, user) // Unmarshal the JSON bytes into the user instance
 	if err != nil {
-		return nil, errors.NewXgoError("WEB_AUTH_CLIENT__GetBasicUserFromToken__JSONUnmarshal", err)
+		return nil, xgo.NewHttpInternalError("WEB_AUTH_CLIENT__GetBasicUserFromToken__JSONUnmarshal", err)
 	}
 
 	return user, nil
@@ -98,12 +99,12 @@ func (c BasicAuthClient[T]) SignIn(user T) (*BasicAuthJWT, error) {
 	userMap := make(map[string]interface{})
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		return nil, errors.NewXgoError("WEB_AUTH_CLIENT__SignIn__Marshal", err)
+		return nil, xgo.NewHttpInternalError("WEB_AUTH_CLIENT__SignIn__Marshal", err)
 	}
 
 	err = json.Unmarshal(userBytes, &userMap)
 	if err != nil {
-		return nil, errors.NewXgoError("WEB_AUTH_CLIENT__SignIn__Unmarshal", err)
+		return nil, xgo.NewHttpInternalError("WEB_AUTH_CLIENT__SignIn__Unmarshal", err)
 	}
 
 	for key, value := range userMap {
@@ -113,7 +114,7 @@ func (c BasicAuthClient[T]) SignIn(user T) (*BasicAuthJWT, error) {
 	token := jwt.NewWithClaims(c.method, claims)
 	tokenString, err := token.SignedString(c.jwtSignatureKey)
 	if err != nil {
-		return nil, errors.NewXgoError("WEB_AUTH_CLIENT__SignIn__SignedString", err)
+		return nil, xgo.NewHttpInternalError("WEB_AUTH_CLIENT__SignIn__SignedString", err)
 	}
 
 	res := BasicAuthJWT{
