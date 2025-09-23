@@ -3,7 +3,7 @@ module github.com/anoaland/xgo-basic-auth
 go 1.21.6
 
 require (
-	github.com/anoaland/xgo v1.7.3
+	github.com/anoaland/xgo v1.7.4
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.20.0
